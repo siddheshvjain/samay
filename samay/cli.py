@@ -47,7 +47,7 @@ def research(
     ticker_list = [t.strip() for t in tickers.split(",")]
 
     try:
-        _, strategy_class = generate_strategy(description)
+        strategy_path, strategy_class = generate_strategy(description)
         strategy = strategy_class()
 
         config = BacktestConfig(
@@ -65,6 +65,7 @@ def research(
 
         _save_last_result({
             "strategy_name": result.strategy_name,
+            "strategy_path": strategy_path,
             "tickers": result.tickers,
             "start_date": result.start_date,
             "end_date": result.end_date,
@@ -127,6 +128,7 @@ def backtest(
 
     _save_last_result({
         "strategy_name": result.strategy_name,
+        "strategy_path": str(path.absolute()),
         "tickers": result.tickers,
         "start_date": result.start_date,
         "end_date": result.end_date,
@@ -158,10 +160,114 @@ def report():
 
 @app.command()
 def paper(
-    broker: str = typer.Option("alpaca", "--broker", help="Broker: alpaca, zerodha, ibkr"),
+    broker: str = typer.Option("alpaca", "--broker", help="Broker: alpaca, zerodha"),
+    strategy_path_override: str = typer.Option(None, "--strategy", help="Override strategy path"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview without placing orders"),
 ):
     """Paper trade the last backtested strategy."""
-    console.print(f"[yellow]Paper trading via {broker} — coming in v0.2.0[/yellow]")
+    from samay.brokers.alpaca import AlpacaAdapter
+    from samay.brokers.zerodha import ZerodhaAdapter
+    from samay.paper import PaperTrader
+    from samay.strategy.base import Strategy
+
+    last_result = _load_last_result()
+    if last_result is None:
+        console.print(
+            "[red]No backtest results found.[/red] Run 'samay research' or 'samay backtest' first."
+        )
+        raise typer.Exit(1)
+
+    strategy_path = strategy_path_override or last_result.get("strategy_path")
+    if not strategy_path:
+        console.print(
+            "[red]Strategy path not found in last result.[/red] Run 'samay research' or 'samay backtest' again."
+        )
+        raise typer.Exit(1)
+
+    path = Path(strategy_path)
+    if not path.exists():
+        console.print(f"[red]Strategy file not found:[/red] {strategy_path}")
+        raise typer.Exit(1)
+
+    spec = importlib.util.spec_from_file_location("user_strategy", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    strategy_class = None
+    for name in dir(module):
+        obj = getattr(module, name)
+        if isinstance(obj, type) and issubclass(obj, Strategy) and obj is not Strategy:
+            strategy_class = obj
+            break
+
+    if strategy_class is None:
+        console.print("[red]No Strategy subclass found in strategy file.[/red]")
+        raise typer.Exit(1)
+
+    strategy = strategy_class()
+    tickers = last_result.get("tickers", [])
+
+    if broker == "alpaca":
+        adapter = AlpacaAdapter(paper=True)
+    elif broker == "zerodha":
+        adapter = ZerodhaAdapter()
+    else:
+        console.print(f"[red]Unknown broker:[/red] {broker}")
+        raise typer.Exit(1)
+
+    console.print(f"[dim]Trading {strategy.name} via {broker}...[/dim]")
+    if dry_run:
+        console.print("[yellow]DRY RUN[/yellow] — no orders will be placed")
+
+    trader = PaperTrader(strategy, adapter, tickers)
+
+    try:
+        orders = trader.run_once(dry_run=dry_run)
+
+        if orders:
+            table = Table(title="Orders Placed", box=box.ROUNDED)
+            table.add_column("Ticker")
+            table.add_column("Qty", justify="right")
+            table.add_column("Side")
+            table.add_column("Action")
+            for order in orders:
+                table.add_row(
+                    order.get("ticker", "?"),
+                    str(order.get("qty", "?")),
+                    order.get("side", "?"),
+                    order.get("action", "?"),
+                )
+            console.print(table)
+        else:
+            console.print("[dim]No orders placed (no signals or already in position).[/dim]")
+
+        status = trader.status()
+        account = status["account"]
+
+        console.print()
+        console.print("[bold]Account Status[/bold]")
+        console.print(f"  Equity: ${account.get('equity', account.get('portfolio_value', 0)):,.2f}")
+        console.print(f"  Cash: ${account.get('cash', account.get('available_cash', 0)):,.2f}")
+
+        if status["positions"]:
+            console.print()
+            pos_table = Table(title="Open Positions", box=box.ROUNDED)
+            pos_table.add_column("Ticker")
+            pos_table.add_column("Qty", justify="right")
+            pos_table.add_column("Entry Price", justify="right")
+            pos_table.add_column("Current Price", justify="right")
+            for pos in status["positions"]:
+                pos_table.add_row(
+                    pos.get("ticker", "?"),
+                    str(pos.get("qty", "?")),
+                    f"${pos.get('avg_entry_price', pos.get('last_price', 0)):.2f}",
+                    f"${pos.get('current_price', pos.get('last_price', 0)):.2f}",
+                )
+            console.print(pos_table)
+
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
 
 
 @app.command()

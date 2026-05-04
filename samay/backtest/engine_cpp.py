@@ -9,7 +9,7 @@ import pandas as pd
 def get_engine():
     """Return C++ engine if available, else pure Python fallback."""
     try:
-        from samay_backtest_cpp import BacktestEngine, BacktestConfig
+        import samay_backtest_cpp  # noqa: F401
         return "cpp"
     except ImportError:
         return "python"
@@ -30,7 +30,7 @@ def simulate_fast(
     engine_type = get_engine()
 
     if engine_type == "cpp":
-        from samay_backtest_cpp import BacktestEngine, BacktestConfig
+        from samay_backtest_cpp import BacktestConfig, BacktestEngine
 
         cfg = BacktestConfig()
         cfg.initial_capital = capital

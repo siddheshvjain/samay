@@ -1,3 +1,4 @@
+import inspect
 import json
 from pathlib import Path
 
@@ -352,9 +353,121 @@ def page_knowledge():
             st.info("No failed strategies documented yet.")
 
 
-if __name__ == "__main__":
-    import inspect
+def page_comparison():
+    """Page 5: Compare multiple strategies."""
+    st.title("⚖️ Compare Strategies")
 
+    strategies = load_all_strategies()
+    strategy_names = [s["name"] for s in strategies]
+
+    if not strategy_names:
+        st.warning("No strategies found.")
+        return
+
+    with st.sidebar:
+        st.subheader("Select Strategies")
+        selected_names = st.multiselect("Choose 2-3 strategies:", strategy_names, max_selections=3)
+
+    if st.button("Compare", use_container_width=True) and selected_names:
+        results = {}
+        all_curves = []
+
+        for name in selected_names:
+            selected = next((s for s in strategies if s["name"] == name), None)
+            if selected:
+                with st.spinner(f"Backtesting {name}..."):
+                    result = run_community_backtest(selected["id"])
+                    if result:
+                        results[name] = result
+                        all_curves.append((name, result.equity_curve))
+
+        if all_curves:
+            st.subheader("Equity Curves")
+            df_curves = pd.DataFrame({name: curve for name, curve in all_curves})
+            fig = px.line(df_curves, labels={"index": "Date", "value": "Portfolio Value ($)"})
+            st.plotly_chart(fig, use_container_width=True)
+
+            st.subheader("Metrics Comparison")
+            comparison_data = []
+            for name, result in results.items():
+                comparison_data.append({
+                    "Strategy": name,
+                    "CAGR %": f"{result.metrics['cagr_pct']:.2f}",
+                    "Sharpe": f"{result.metrics['sharpe_ratio']:.3f}",
+                    "Max DD %": f"{result.metrics['max_drawdown_pct']:.2f}",
+                    "Win Rate %": f"{result.metrics['win_rate_pct']:.2f}",
+                    "# Trades": result.metrics["num_trades"],
+                })
+            st.dataframe(pd.DataFrame(comparison_data), use_container_width=True, hide_index=True)
+
+            st.subheader("Risk-Return Scatter")
+            all_strats = pd.DataFrame([
+                {
+                    "name": s["name"],
+                    "cagr": s.get("cagr_pct", 0),
+                    "dd": abs(s.get("max_drawdown_pct", 0)),
+                    "region": s.get("region", "unknown"),
+                }
+                for s in strategies
+            ])
+            fig_scatter = px.scatter(
+                all_strats,
+                x="dd",
+                y="cagr",
+                hover_name="name",
+                color="region",
+                labels={"dd": "Max Drawdown %", "cagr": "CAGR %"},
+                title="Risk-Return Profile",
+            )
+            st.plotly_chart(fig_scatter, use_container_width=True)
+
+
+def page_paper_trading():
+    """Page 6: Paper trading interface."""
+    st.title("💸 Paper Trading")
+
+    strategies = load_all_strategies()
+    strategy_names = [s["name"] for s in strategies]
+
+    if not strategy_names:
+        st.warning("No strategies found.")
+        return
+
+    with st.sidebar:
+        st.subheader("Configuration")
+        selected_name = st.selectbox("Select Strategy", strategy_names)
+        _ = st.selectbox("Broker", ["alpaca", "zerodha"])
+
+        selected = next((s for s in strategies if s["name"] == selected_name), None)
+        if selected:
+            st.write(f"**Description:** {selected.get('description')}")
+            st.write(f"**Tickers:** {', '.join(selected.get('tickers', []))}")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        check_signals_btn = st.button("Check Signals (Dry Run)", use_container_width=True)
+    with col2:
+        place_orders_btn = st.button(
+            "Place Orders",
+            use_container_width=True,
+            type="primary",
+        )
+
+    if check_signals_btn:
+        st.info("✋ Dry run mode — no orders will be placed.")
+        with st.spinner("Checking signals..."):
+            st.write("(Signals would be displayed here once broker adapter auth is configured)")
+
+    if place_orders_btn:
+        st.warning("🚨 Real orders would be placed here. Set ALPACA_API_KEY to proceed.")
+        with st.spinner("Placing orders..."):
+            st.write("(Orders would be shown in table format)")
+
+    st.subheader("Portfolio Status")
+    st.info("Connect a broker account to view live positions and account balance.")
+
+
+if __name__ == "__main__":
     st.sidebar.image(
         "https://img.shields.io/badge/samay-alpha-orange",
         width=200,
@@ -362,7 +475,14 @@ if __name__ == "__main__":
 
     page = st.sidebar.radio(
         "Navigate",
-        ["🏆 Leaderboard", "📊 Backtest Viewer", "🤖 AI Research", "🧠 Knowledge Commons"],
+        [
+            "🏆 Leaderboard",
+            "📊 Backtest Viewer",
+            "🤖 AI Research",
+            "⚖️ Compare",
+            "💸 Paper Trading",
+            "🧠 Knowledge Commons",
+        ],
     )
 
     if page == "🏆 Leaderboard":
@@ -371,5 +491,9 @@ if __name__ == "__main__":
         page_backtest_viewer()
     elif page == "🤖 AI Research":
         page_ai_research()
+    elif page == "⚖️ Compare":
+        page_comparison()
+    elif page == "💸 Paper Trading":
+        page_paper_trading()
     else:
         page_knowledge()

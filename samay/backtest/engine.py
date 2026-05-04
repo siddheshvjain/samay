@@ -30,9 +30,9 @@ class BacktestResult:
 
 
 class BacktestEngine:
-    def __init__(self, config: BacktestConfig):
+    def __init__(self, config: BacktestConfig, provider=None):
         self.config = config
-        self.provider = YFinanceProvider()
+        self.provider = provider or YFinanceProvider()
 
     def run(self) -> BacktestResult:
         cfg = self.config
