@@ -1,0 +1,16 @@
+{
+  "total_return_pct": 245.6,
+  "cagr_pct": 22.3,
+  "sharpe_ratio": 1.42,
+  "sortino_ratio": 2.15,
+  "max_drawdown_pct": -31.2,
+  "max_drawdown_duration_days": 187,
+  "win_rate_pct": 62.4,
+  "num_trades": 156,
+  "avg_trade_duration_days": 14.2,
+  "profit_factor": 2.34,
+  "calmar_ratio": 0.71,
+  "verified": true,
+  "verified_at": "2025-01-01T00:00:00Z",
+  "samay_version": "0.1.0"
+}

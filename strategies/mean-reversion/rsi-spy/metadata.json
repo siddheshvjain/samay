@@ -1,0 +1,13 @@
+{
+  "name": "rsi-spy-mean-reversion",
+  "description": "RSI-based mean reversion on SPY: buy when RSI drops below 30, sell when above 70",
+  "author": "samay-core",
+  "version": "1.0.0",
+  "asset_class": "equity",
+  "region": "us",
+  "tickers": ["SPY"],
+  "backtest_from": "2015-01-01",
+  "backtest_to": "2024-01-01",
+  "tags": ["mean-reversion", "rsi", "daily"],
+  "contributed_date": "2025-01-01"
+}

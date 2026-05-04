@@ -1,0 +1,13 @@
+{
+  "name": "nifty-top10-momentum",
+  "description": "Top 10 Nifty 50 stocks by 3-month return, weekly rebalance",
+  "author": "samay-core",
+  "version": "1.0.0",
+  "asset_class": "equity",
+  "region": "india",
+  "tickers": ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS", "HINDUNILVR.NS", "KOTAKBANK.NS", "AXISBANK.NS", "ITC.NS", "LT.NS"],
+  "backtest_from": "2018-01-01",
+  "backtest_to": "2023-12-31",
+  "tags": ["momentum", "nifty", "weekly"],
+  "contributed_date": "2025-01-01"
+}
