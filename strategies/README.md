@@ -74,6 +74,17 @@ Never hand-write this file. CI generates it automatically:
 }
 ```
 
+## View in Dashboard
+
+All strategies are visualized in the interactive dashboard:
+
+```bash
+pip install -e ".[dashboard]"
+streamlit run samay/dashboard.py
+```
+
+Browse strategies, run backtests with custom capital/dates, compare equity curves and monthly returns.
+
 ## Testing Locally
 
 ```bash
