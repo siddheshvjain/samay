@@ -1,0 +1,13 @@
+{
+  "name": "golden-cross-spy",
+  "description": "Buy SPY on 50/200 SMA golden cross, sell on death cross",
+  "author": "samay-core",
+  "version": "1.0.0",
+  "asset_class": "equity",
+  "region": "us",
+  "tickers": ["SPY"],
+  "backtest_from": "2005-01-01",
+  "backtest_to": "2024-01-01",
+  "tags": ["trend-following", "moving-average", "golden-cross", "daily"],
+  "contributed_date": "2026-05-04"
+}

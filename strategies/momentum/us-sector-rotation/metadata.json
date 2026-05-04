@@ -1,0 +1,13 @@
+{
+  "name": "us-sector-rotation",
+  "description": "Monthly rotation into SPDR sector ETFs with positive 3-month momentum",
+  "author": "samay-core",
+  "version": "1.0.0",
+  "asset_class": "equity",
+  "region": "us",
+  "tickers": ["XLK", "XLV", "XLE", "XLF", "XLY", "XLC", "XLI", "XLRE", "XLU", "XLB", "XLP"],
+  "backtest_from": "2010-01-01",
+  "backtest_to": "2024-01-01",
+  "tags": ["momentum", "sector-rotation", "etf", "monthly"],
+  "contributed_date": "2026-05-04"
+}

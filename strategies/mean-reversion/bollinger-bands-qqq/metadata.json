@@ -1,0 +1,13 @@
+{
+  "name": "bollinger-bands-qqq",
+  "description": "Buy QQQ when price touches lower Bollinger Band (−2σ), sell at upper band (+2σ)",
+  "author": "samay-core",
+  "version": "1.0.0",
+  "asset_class": "equity",
+  "region": "us",
+  "tickers": ["QQQ"],
+  "backtest_from": "2015-01-01",
+  "backtest_to": "2024-01-01",
+  "tags": ["mean-reversion", "bollinger-bands", "etf", "daily"],
+  "contributed_date": "2026-05-04"
+}
